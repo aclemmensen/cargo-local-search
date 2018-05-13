@@ -47,8 +47,8 @@ fn build_index() -> Result<Vec<String>, Box<Error>> {
     let branches = repo.branches(None)?;
     for branch in branches {
         let (branch, _branch_type) = branch?;
-        let fuck = branch.into_reference();
-        let target = fuck.target().ok_or("no target oid")?;
+        let branch_ref = branch.into_reference();
+        let target = branch_ref.target().ok_or("no target oid")?;
         let commit = repo.find_commit(target)?;
         let tree = commit.tree()?;
         let mut names = walk(&repo, tree)?;
