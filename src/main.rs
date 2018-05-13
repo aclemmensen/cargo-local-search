@@ -9,7 +9,6 @@ use std::result::Result;
 use std::error::Error;
 use stopwatch::Stopwatch;
 use regex::Regex;
-use which::which;
 use std::path::{Path, PathBuf};
 
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
@@ -26,8 +25,7 @@ fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error>
                 let name = tree.name().unwrap();
                 names.push(name.to_string());
             },
-            Some(_) => (),
-            None => ()
+            _ => ()
         };
 
     }
@@ -40,7 +38,7 @@ fn build_pattern(query: &str) -> Result<Regex, regex::Error> {
         static ref RE: Regex = Regex::new("(.)").unwrap();
     }
 
-    let enhanced = RE.replace_all(&query, "(.*)$0");
+    let enhanced = RE.replace_all(&query, ".*($0)");
     Regex::new(&enhanced)
 }
 
@@ -77,17 +75,42 @@ fn build_index() -> Result<Vec<String>, Box<Error>> {
     Ok(results)
 }
 
+fn starts_name(index: usize, full_name: &str) -> bool {
+    if index == 0 {
+        return true
+    }
+    let full_name = full_name.as_bytes();
+    let prev: char = full_name[index - 1].into();
+    let curr: char = full_name[index].into();
+    prev == '-' || prev == '_' || curr.is_uppercase()
+}
+
+fn score_name(name: &String, pattern: &Regex) -> Option<usize> {
+    if !pattern.is_match(&name) {
+        return None
+    }
+
+    let matches = pattern.captures(&name).unwrap();
+
+    let mut score = 0;
+
+    for idx in 0 .. matches.len() - 1 { 
+        let m1 = &matches.get(idx).unwrap();
+        let m2 = &matches.get(idx + 1).unwrap();
+        if starts_name(m1.start(), name) && starts_name(m2.start(), name) {
+            continue;
+        }
+        score = score + (m2.start() - m1.start());
+    }
+
+    Some(score)
+}
+
 fn search_index(index: &Vec<String>, pattern: &Regex) -> Vec<(String, usize)> {
     let mut results = Vec::new();
     for name in index {
-        if pattern.is_match(&name) {
-            let matches = pattern.captures(&name).unwrap();
-            let score = matches
-                .iter()
-                .skip(1)
-                .fold(0, |c, m| c + m.map(|m| m.end()-m.start()).unwrap_or(0));
-
-            results.push((name.clone(), score));
+        if let Some(score) = score_name(name, pattern) {
+            results.push((name.clone(), score))
         }
     }
     
@@ -103,12 +126,15 @@ fn search_index(index: &Vec<String>, pattern: &Regex) -> Vec<(String, usize)> {
 fn run() -> Result<(), Box<Error>> {
     let mut sw = Stopwatch::start_new();
     let index = build_index()?;
-    println!("Found {} crates in {}", index.len(), sw.elapsed_ms());
+    println!("Found {} crates in {} ms", index.len(), sw.elapsed_ms());
     sw.restart();
-    let pattern = build_pattern("hpr")?;
+    let pattern = build_pattern("yhm")?;
     let matches = search_index(&index, &pattern);
-    println!("{:?}", matches);
-    println!("Found {} matches in {}", matches.len(), sw.elapsed_ms());
+    
+    for (name, score) in &matches {
+        println!("{} {}", score, name);
+    }
+    println!("Found {} matches in {} ms", matches.len(), sw.elapsed_ms());
     Ok(())
 }
 
