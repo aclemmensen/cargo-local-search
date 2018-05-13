@@ -1,0 +1,10 @@
+[package]
+name = "cargo-local-search"
+version = "0.1.0"
+authors = ["Asbjørn Clemmensen <ac@givetwise.dk>"]
+
+[dependencies]
+git2 = "0.7.1"
+stopwatch = "0.0.7"
+regex = "1.0.0"
+lazy_static = "1.0.0"
