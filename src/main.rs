@@ -7,10 +7,8 @@ extern crate which;
 use git2::Repository;
 use std::result::Result;
 use std::error::Error;
-use stopwatch::Stopwatch;
 use regex::Regex;
 use std::path::{Path, PathBuf};
-use std::io::{self, Stdin};
 
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
     let mut names = Vec::new();
@@ -124,21 +122,6 @@ fn search_index(index: &Vec<String>, pattern: &Regex) -> Vec<(String, usize)> {
     results
 }
 
-fn run() -> Result<(), Box<Error>> {
-    let mut sw = Stopwatch::start_new();
-    let index = build_index()?;
-    println!("Found {} crates in {} ms", index.len(), sw.elapsed_ms());
-    sw.restart();
-    let pattern = build_pattern("yhm")?;
-    let matches = search_index(&index, &pattern);
-    
-    for (name, score) in &matches {
-        println!("{} {}", score, name);
-    }
-    println!("Found {} matches in {} ms", matches.len(), sw.elapsed_ms());
-    Ok(())
-}
-
 const EXIT_CMD: &str = "\\\\";
 
 fn handle_input(state: &State, input: &str) -> Result<(), Box<Error>> {
@@ -149,7 +132,10 @@ fn handle_input(state: &State, input: &str) -> Result<(), Box<Error>> {
     } else {
         let pattern = build_pattern(input)?;
         let matches = search_index(&state.index, &pattern);
-        println!("{:?}", matches);
+
+        for (name, score) in &matches {
+            println!("{} {}", score, name);
+        }
     }
 
     return Ok(());
