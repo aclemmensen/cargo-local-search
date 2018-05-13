@@ -112,15 +112,17 @@ fn run() -> Result<(), Box<Error>> {
     Ok(())
 }
 
+const EXIT_CMD: &str = "\\\\";
+
 fn handle_input(state: &State, input: &str) -> Result<bool, Box<Error>> {
-    if input == "!exit" {
+    if input == EXIT_CMD {
         return Ok(false);
     }
 
     let parts: Vec<&str> = input.splitn(2, '=').collect();
 
     if parts.len() == 2 {
-        println!("Can't do versions yet");
+        unimplemented!();
     } else {
         let pattern = build_pattern(input)?;
         let matches = search_index(&state.index, &pattern);
@@ -152,7 +154,7 @@ struct State {
 }
 
 fn main() {
-    println!("Hello, world!");
+    println!("Cargo search! Write crate name and hit enter. Write `{}` to quit.", EXIT_CMD);
     read_input().unwrap();
     //run().unwrap();
 }
