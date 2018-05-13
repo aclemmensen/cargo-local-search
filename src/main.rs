@@ -114,11 +114,7 @@ fn run() -> Result<(), Box<Error>> {
 
 const EXIT_CMD: &str = "\\\\";
 
-fn handle_input(state: &State, input: &str) -> Result<bool, Box<Error>> {
-    if input == EXIT_CMD {
-        return Ok(false);
-    }
-
+fn handle_input(state: &State, input: &str) -> Result<(), Box<Error>> {
     let parts: Vec<&str> = input.splitn(2, '=').collect();
 
     if parts.len() == 2 {
@@ -129,7 +125,7 @@ fn handle_input(state: &State, input: &str) -> Result<bool, Box<Error>> {
         println!("{:?}", matches);
     }
 
-    return Ok(true);
+    return Ok(());
 }
 
 fn read_input() -> Result<(), Box<Error>> {
@@ -139,11 +135,13 @@ fn read_input() -> Result<(), Box<Error>> {
     loop {
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
-        let result = handle_input(&state, &input.trim())?;
+        let trimmed = input.trim();
 
-        if !result {
+        if trimmed == EXIT_CMD {
             break;
         }
+
+        handle_input(&state, &trimmed)?;
     }
 
     Ok(())
