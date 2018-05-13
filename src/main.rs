@@ -1,6 +1,7 @@
 extern crate git2;
 extern crate stopwatch;
 extern crate regex;
+extern crate which;
 #[macro_use] extern crate lazy_static;
 
 use git2::Repository;
@@ -8,6 +9,8 @@ use std::result::Result;
 use std::error::Error;
 use stopwatch::Stopwatch;
 use regex::Regex;
+use which::which;
+use std::path::{Path, PathBuf};
 
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
     let mut names = Vec::new();
@@ -41,9 +44,26 @@ fn build_pattern(query: &str) -> Result<Regex, regex::Error> {
     Regex::new(&enhanced)
 }
 
+fn find_cargo_repo_path() -> Result<PathBuf, Box<Error>> {
+    let cargo_path = which::which("cargo").expect("Cargo binary not found in PATH");
+    let cargo_index_path = cargo_path
+        .parent()
+        .and_then(|p| p.parent())
+        .and_then(|p| Some(p.join(Path::new("registry/index/"))))
+        .expect("Could not find cargo index folder");
+
+    let git_folders = cargo_index_path.read_dir()?.map(|f| f.unwrap());
+    let newest = git_folders.max_by_key(|f| f
+                                        .metadata().unwrap()
+                                        .modified().unwrap())
+        .ok_or("No cargo index folders found")?;
+
+    Ok(newest.path())
+}
+
 fn build_index() -> Result<Vec<String>, Box<Error>> {
     let mut results = Vec::new();
-    let repo = Repository::open("C:/Users/ac/.cargo/registry/index/github.com-1ecc6299db9ec823")?;
+    let repo = Repository::open(find_cargo_repo_path()?)?;
     let branches = repo.branches(None)?;
     for branch in branches {
         let (branch, _branch_type) = branch?;
