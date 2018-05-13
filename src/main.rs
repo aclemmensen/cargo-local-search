@@ -10,6 +10,7 @@ use std::error::Error;
 use stopwatch::Stopwatch;
 use regex::Regex;
 use std::path::{Path, PathBuf};
+use std::io::{self, Stdin};
 
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
     let mut names = Vec::new();
@@ -111,7 +112,47 @@ fn run() -> Result<(), Box<Error>> {
     Ok(())
 }
 
+fn handle_input(state: &State, input: &str) -> Result<bool, Box<Error>> {
+    if input == "!exit" {
+        return Ok(false);
+    }
+
+    let parts: Vec<&str> = input.splitn(2, '=').collect();
+
+    if parts.len() == 2 {
+        println!("Can't do versions yet");
+    } else {
+        let pattern = build_pattern(input)?;
+        let matches = search_index(&state.index, &pattern);
+        println!("{:?}", matches);
+    }
+
+    return Ok(true);
+}
+
+fn read_input() -> Result<(), Box<Error>> {
+    let index = build_index()?;
+    let state = State { index };
+
+    loop {
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        let result = handle_input(&state, &input.trim())?;
+
+        if !result {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
+struct State {
+    index: Vec<String>
+}
+
 fn main() {
     println!("Hello, world!");
-    run().unwrap();
+    read_input().unwrap();
+    //run().unwrap();
 }
