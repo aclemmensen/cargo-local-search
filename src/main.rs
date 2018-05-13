@@ -10,6 +10,7 @@ use std::error::Error;
 use stopwatch::Stopwatch;
 use regex::Regex;
 use std::path::{Path, PathBuf};
+use std::io::{self, Stdin};
 
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
     let mut names = Vec::new();
@@ -138,7 +139,47 @@ fn run() -> Result<(), Box<Error>> {
     Ok(())
 }
 
+const EXIT_CMD: &str = "\\\\";
+
+fn handle_input(state: &State, input: &str) -> Result<(), Box<Error>> {
+    let parts: Vec<&str> = input.splitn(2, '=').collect();
+
+    if parts.len() == 2 {
+        unimplemented!();
+    } else {
+        let pattern = build_pattern(input)?;
+        let matches = search_index(&state.index, &pattern);
+        println!("{:?}", matches);
+    }
+
+    return Ok(());
+}
+
+fn read_input() -> Result<(), Box<Error>> {
+    let index = build_index()?;
+    let state = State { index };
+
+    loop {
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        let trimmed = input.trim();
+
+        if trimmed == EXIT_CMD {
+            break;
+        }
+
+        handle_input(&state, &trimmed)?;
+    }
+
+    Ok(())
+}
+
+struct State {
+    index: Vec<String>
+}
+
 fn main() {
-    println!("Hello, world!");
-    run().unwrap();
+    println!("Cargo search! Write crate name and hit enter. Write `{}` to quit.", EXIT_CMD);
+    read_input().unwrap();
+    //run().unwrap();
 }
