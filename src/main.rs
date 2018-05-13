@@ -9,7 +9,6 @@ use std::result::Result;
 use std::error::Error;
 use stopwatch::Stopwatch;
 use regex::Regex;
-use which::which;
 use std::path::{Path, PathBuf};
 
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
