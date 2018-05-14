@@ -4,6 +4,10 @@ extern crate stopwatch;
 extern crate which;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
 use git2::Repository;
 use std::error::Error;
@@ -11,6 +15,12 @@ use std::path::{Path, PathBuf};
 use std::result::Result;
 
 mod ranking;
+
+#[derive(Serialize, Debug)]
+struct CrateInfo {
+    name: String,
+    version: Option<String>
+}
 
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
     let mut names = Vec::new();
@@ -67,8 +77,9 @@ fn build_index() -> Result<Vec<String>, Box<Error>> {
 
 const EXIT_CMD: &str = "\\\\";
 
-fn handle_input(state: &State, input: &str) -> Result<(), Box<Error>> {
+fn handle_input(state: &State, input: &str) -> Result<Vec<CrateInfo>, Box<Error>> {
     let parts: Vec<&str> = input.splitn(2, '=').collect();
+    let mut items = Vec::new();
 
     if parts.len() == 2 {
         unimplemented!();
@@ -76,11 +87,15 @@ fn handle_input(state: &State, input: &str) -> Result<(), Box<Error>> {
         let matches = ranking::search_names(&state.index, input)?;
 
         for (name, score) in &matches {
-            println!("{} {}", score, name);
+            //println!("{} {}", score, name);
+            items.push(CrateInfo {
+                name: name.to_string(),
+                version: None
+            });
         }
     }
 
-    return Ok(());
+    return Ok(items);
 }
 
 fn read_input() -> Result<(), Box<Error>> {
@@ -96,7 +111,9 @@ fn read_input() -> Result<(), Box<Error>> {
             break;
         }
 
-        handle_input(&state, &trimmed)?;
+        let results = handle_input(&state, &trimmed)?;
+        let ser = serde_json::to_string(&results)?;
+        println!("{}", ser);
     }
 
     Ok(())
