@@ -14,11 +14,11 @@ fn starts_name(index: i32, full_name: &str) -> bool {
 }
 
 fn score_name(name: &String, pattern: &Regex) -> Option<i32> {
-    if !pattern.is_match(&name) {
-        return None;
-    }
-
-    let matches = pattern.captures(&name).unwrap();
+    let matches = match pattern.captures(&name) {
+        Some(m) => m,
+        None => return None,
+    };
+    
     let mut start_idxs: Vec<_> = vec![-1];
 
     let m_start_idxs: Vec<_> = matches
