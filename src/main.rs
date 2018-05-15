@@ -124,9 +124,9 @@ struct State {
 }
 
 fn main() {
-    println!(
-        "Cargo search! Write crate name and hit enter. Write `{}` to quit.",
-        EXIT_CMD
-    );
+    // println!(
+    //     "Cargo search! Write crate name and hit enter. Write `{}` to quit.",
+    //     EXIT_CMD
+    // );
     read_input().unwrap();
 }
