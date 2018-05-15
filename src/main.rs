@@ -22,6 +22,14 @@ struct CrateInfo {
     version: Option<String>
 }
 
+struct State {
+    index: Vec<String>,
+}
+
+const EXIT_CMD: &str = "\\\\";
+
+const TO_TAKE: usize = 20;
+
 fn walk(repo: &Repository, tree: git2::Tree) -> Result<Vec<String>, git2::Error> {
     let mut names = Vec::new();
     for tree in tree.iter() {
@@ -75,8 +83,6 @@ fn build_index() -> Result<Vec<String>, Box<Error>> {
     Ok(results)
 }
 
-const EXIT_CMD: &str = "\\\\";
-
 fn handle_input(state: &State, input: &str) -> Result<Vec<CrateInfo>, Box<Error>> {
     let parts: Vec<&str> = input.splitn(2, '=').collect();
     let mut items = Vec::new();
@@ -85,9 +91,9 @@ fn handle_input(state: &State, input: &str) -> Result<Vec<CrateInfo>, Box<Error>
         unimplemented!();
     } else {
         let matches = ranking::search_names(&state.index, input)?;
+        let to_take = std::cmp::min(TO_TAKE, matches.len());
 
-        for (name, score) in &matches {
-            //println!("{} {}", score, name);
+        for (name, _score) in &matches[..to_take] {
             items.push(CrateInfo {
                 name: name.to_string(),
                 version: None
@@ -117,10 +123,6 @@ fn read_input() -> Result<(), Box<Error>> {
     }
 
     Ok(())
-}
-
-struct State {
-    index: Vec<String>,
 }
 
 fn main() {
