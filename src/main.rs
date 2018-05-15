@@ -8,7 +8,9 @@ extern crate lazy_static;
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
+extern crate clap;
 
+use clap::{App, Arg};
 use git2::Repository;
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -24,6 +26,8 @@ struct CrateInfo {
 
 struct State {
     index: Vec<String>,
+    quiet: bool,
+    max_results: usize
 }
 
 const EXIT_CMD: &str = "\\\\";
@@ -91,7 +95,7 @@ fn handle_input(state: &State, input: &str) -> Result<Vec<CrateInfo>, Box<Error>
         unimplemented!();
     } else {
         let matches = ranking::search_names(&state.index, input)?;
-        let to_take = std::cmp::min(TO_TAKE, matches.len());
+        let to_take = std::cmp::min(state.max_results, matches.len());
 
         for (name, _score) in &matches[..to_take] {
             items.push(CrateInfo {
@@ -104,10 +108,7 @@ fn handle_input(state: &State, input: &str) -> Result<Vec<CrateInfo>, Box<Error>
     return Ok(items);
 }
 
-fn read_input() -> Result<(), Box<Error>> {
-    let index = build_index()?;
-    let state = State { index };
-
+fn read_input(state: &State) -> Result<(), Box<Error>> {
     loop {
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
@@ -126,9 +127,33 @@ fn read_input() -> Result<(), Box<Error>> {
 }
 
 fn main() {
-    // println!(
-    //     "Cargo search! Write crate name and hit enter. Write `{}` to quit.",
-    //     EXIT_CMD
-    // );
-    read_input().unwrap();
+    let matches = App::new("Cargo Search")
+        .version("0.1")
+        .about("Searches your local Cargo index for crate names")
+        .author("srnjcbsn, nkf, aclemmensen")
+        .arg(Arg::with_name("quiet")
+            .short("q")
+            .help("Don't print any diagnostic messages"))
+        .arg(Arg::with_name("results")
+            .short("m")
+            .long("max-results")
+            .help(&format!("Number of results to return (default {})", TO_TAKE))
+            .takes_value(true))
+        .get_matches();
+    
+    let index = build_index().unwrap();
+    let state = State {
+        index,
+        quiet: matches.is_present("quiet"),
+        max_results: matches.value_of("results").and_then(|s| s.parse::<usize>().ok()).unwrap_or(TO_TAKE)
+    };
+
+    if !state.quiet {
+        println!(
+            "Cargo Search! Write crate name and hit enter. Write `{}` to quit.",
+            EXIT_CMD
+        );
+    }
+    
+    read_input(&state).unwrap();
 }
